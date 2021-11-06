@@ -1,6 +1,6 @@
 program ex8;
 var
-naissance: integer;
+	naissance: integer;
 begin
 	write('Année de naissance: ');
 	readln(naissance);

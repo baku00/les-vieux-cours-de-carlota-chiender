@@ -21,7 +21,6 @@ BEGIN
 	DR := 0;
 	WriteLn('Les différents temps possible pour une distance compris entre ', DR, ' et ', SB, ' sont:');
 	WHILE DR < SB DO BEGIN
-		// Première version
 		WriteLn('==========================');
 		WriteLn('Distance de: ', DR);
 		tempsEAU := Sqrt(Sqr(DR) + Sqr(RS)) / CvitesseEAU;
