@@ -1,0 +1,16 @@
+PROGRAM ex6;
+CONST
+	TAILLE_TABLEAU_1 = 10;
+	TAILLE_TABLEAU_2 = 15;
+	VALEUR_MAX = 100;
+VAR
+	tab1: ARRAY OF INTEGER;
+	tab2: ARRAY OF INTEGER;
+	i: INTEGER;
+BEGIN
+	SetLength(tab1, TAILLE_TABLEAU_1);
+	SetLength(tab2, TAILLE_TABLEAU_2);
+	FOR i := 0 TO TAILLE_TABLEAU_2 DO BEGIN
+		WriteLn('Index[', i, ']: ', tab1[i]);
+	END;
+END.
