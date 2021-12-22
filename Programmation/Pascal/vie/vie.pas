@@ -3,20 +3,24 @@ PROGRAM vie;
 uses Crt;
 
 TYPE
-	POINT_X			= ARRAY OF Char;
-	UPDATE			= ARRAY OF Integer;
+	T_POINT_X		= ARRAY OF Char;
+	T_UPDATE		= ARRAY OF Integer;
 CONST
-	EMPTY			= 'O';
-	CELLULE			= 'X';
-	NEW_LINE		= 5;
-	MAX_ROUND		= 2;
+	EMPTY			= '.';
+	CELLULE			= 'A';
+	NEW				= 'N';
+	NEW_LINE		= 1;
+	MAX_ROUND		= 150;
 	SPACE			= 3;
+	TIME_OUT		= 75;
 VAR
-	Points			: ARRAY OF POINT_X;
-	Die				: ARRAY OF UPDATE;
-	Born			: ARRAY OF UPDATE;
+	Points			: ARRAY OF T_POINT_X;
+	LastConfig		: ARRAY OF T_POINT_X;
+	Die				: ARRAY OF T_UPDATE;
+	Born			: ARRAY OF T_UPDATE;
 	X				: Integer;
 	Y				: Integer;
+	IsEquals		: Integer;
 	Width			: Integer;
 	Height			: Integer;
 	Map				: Text;
@@ -54,15 +58,16 @@ BEGIN
 
 	Height := LineNumber - 1;
 	SetLength(Points, Height);
+	SetLength(LastConfig, Height);
 	SetLength(Die, Height);
 	SetLength(Born, Height);
 	FOR Y := 0 TO Height DO
 	BEGIN
 		SetLength(Points[Y], Width);
+		SetLength(LastConfig[Y], Width);
 		SetLength(Die[Y], Width);
 		SetLength(Born[Y], Width);
 	END;
-
 	X := 0;
 	Y := 0;
 	CelluleCounter := 0;
@@ -74,7 +79,7 @@ BEGIN
 		FOR X := 0 TO Length(Line) DO
 		BEGIN
 			Points[Y, X] := Line[X];
-			IF Points[Y, X] = CELLULE THEN
+			IF (Points[Y, X] = CELLULE) OR (Points[Y, X] = NEW) THEN
 				CelluleCounter += 1;
 		END;
 		Y += 1;
@@ -86,26 +91,42 @@ BEGIN
 		exit;
 	END;
 
-	FOR Round := 0 TO MAX_ROUND DO
+	Round := 0;
+	WHILE (Round < MAX_ROUND) AND (CelluleCounter > 0) DO
 	BEGIN
+		IF (Round > 1) THEN
+		BEGIN
+			IsEquals := 1;
+			FOR Y := 0 TO Height DO
+			BEGIN
+				FOR X := 0 TO Width DO
+				BEGIN
+					IF (Points[Y, X] <> LastConfig[Y, X]) THEN
+						IsEquals := 0;
+				END;
+			END;
+			IF (IsEquals = 1) THEN
+			BEGIN
+				WriteLn();
+				WriteLn('Cette configuration sarrete ici');
+				exit;
+			END;
+		END;
+		Round += 1;
+		CelluleCounter := 0;
 		FOR Y := 0 TO Height DO
 		BEGIN
 			FOR X := 0 TO Width DO
 			BEGIN
 				Write(Points[Y,X]);
+				LastConfig[Y, X] := Points[Y, X];
+				IF (Points[Y, X] = CELLULE) OR (Points[Y, X] = NEW) THEN
+					CelluleCounter += 1;
 				IF 1 = 1 THEN BEGIN
 					CelluleArround := 0;
-					FOR CheckCelluleX := 1 TO SPACE DO
+					FOR CheckCelluleY := 1 TO SPACE DO
 					BEGIN
-
-
-
-
-
-
-
-
-						FOR CheckCelluleY := 1 TO SPACE DO
+						FOR CheckCelluleX := 1 TO SPACE DO
 						BEGIN
 							CheckY := Y + (CheckCelluleY - SPACE + 1);
 							IF CheckY < 0 THEN
@@ -117,56 +138,28 @@ BEGIN
 								CheckX := Width
 							ELSE IF CheckX > Width THEN
 								CheckX := 0;
-							IF (Points[CheckY, CheckX] = CELLULE) THEN
+							IF (Points[CheckY, CheckX] = CELLULE) OR (Points[CheckY, CheckX] = NEW) THEN
 							BEGIN
-								IF ((CheckCelluleY = Y) and (CheckCelluleX = X)) THEN
-									CONTINUE;
-								CelluleArround += 1;
+								IF ((CheckY = Y) and (CheckX = X)) THEN
+								BEGIN
+
+								END
+								ELSE
+									CelluleArround += 1;
 							END;
 						END;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 					END;
 					IF (CelluleArround < 2) THEN
 					BEGIN
 						Die[Y, X] := 1;
-						{-- IF Round > 0 THEN BEGIN
-							WriteLn();
-							WriteLn('DIE TO Y: ', Y, ';X: ', X);
-						END; --}
 					END
 					ELSE IF CelluleArround > 3 THEN
 					BEGIN
 						Die[Y, X] := 1;
-						{-- IF Round > 0 THEN BEGIN
-							WriteLn();
-							WriteLn('DIE TO Y: ', Y, ';X: ', X);
-						END; --}
 					END
 					ELSE IF CelluleArround = 3 THEN
 					BEGIN
 						Born[Y, X] := 1;
-						{-- IF Round > 0 THEN BEGIN
-							WriteLn();
-							WriteLn('BORN TO Y: ', Y, ';X: ', X);
-						END; --}
 					END;
 				END;
 			END;
@@ -180,7 +173,6 @@ BEGIN
 				BEGIN
 					Points[Y, X] := EMPTY;
 					Die[Y, X] := 0;
-					{-- Write('Die To Points[', Y, ', ', X,']'); --}
 				END;
 			END;
 		END;
@@ -190,15 +182,23 @@ BEGIN
 			BEGIN
 				IF (Born[Y, X] = 1) THEN
 				BEGIN
-					Points[Y, X] := CELLULE;
+					Points[Y, X] := NEW;
 					Born[Y, X] := 0;
-					{-- Write('Born To Points[', Y, ', ', X,']'); --}
 				END;
 			END;
 		END;
-		Delay(250);
+		Delay(TIME_OUT);
 		FOR NewLine := 0 TO NEW_LINE DO
 			WriteLn('');
-		WriteLn('CelluleArround: ', CelluleArround);
+	END;
+	IF (CelluleCounter > 0) THEN
+	BEGIN
+		WriteLn();
+		WriteLn('Le nombre de tour limite a été atteint (', MAX_ROUND, ')');
+		WriteLn('Vous pouvez changer la valeur de MAX_ROUND pour ajuster le nombre de tour maximum');
+	END
+	ELSE BEGIN
+		WriteLn();
+		WriteLn('Toutes les cellules sont mortes');
 	END;
 END.
