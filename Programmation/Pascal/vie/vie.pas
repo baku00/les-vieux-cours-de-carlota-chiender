@@ -104,7 +104,7 @@ BEGIN
 	END;
 
 	Round := 0;
-	Action := NEXT;
+	Action := '';
 	WHILE (Action = NEXT) OR ((Style = AUTO) AND (Round < MAX_ROUND) AND (CelluleCounter > 0)) DO
 	BEGIN
 		IF (Round > 1) THEN
