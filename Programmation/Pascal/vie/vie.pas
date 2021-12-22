@@ -1,105 +1,118 @@
 PROGRAM vie;
-
-uses Crt;
+uses Crt, sysutils;
 
 TYPE
-	T_POINT_X		= ARRAY OF Char;
-	T_UPDATE		= ARRAY OF Integer;
+	T_POINT_X			= ARRAY OF Char;
+	T_UPDATE			= ARRAY OF Integer;
 CONST
-	EMPTY			= '.';
-	CELLULE			= 'A';
-	NEW				= 'N';
-	NEW_LINE		= 1;
-	MAX_ROUND		= 150;
-	SPACE			= 3;
-	TIME_OUT		= 75;
+	EMPTY				= '.';
+	CELLULE				= 'A';
+	NEW					= 'N';
+	NEW_LINE			= 1;
+	MAX_ROUND			= 150;
+	SPACE				= 3;
+	TIME_OUT			= 75;
+	WIDTH				= 19;
+	HEIGHT				= 19;
+	LOAD_CONFIG			= '1';
+	MANUAL_INPUT		= '2';
+	EOI					= '-1';
+	NEXT				= '1';
+	SAVE				= '2';
+	AUTO				= 'A';
+	MANUAL				= 'M';
+	DEFAULT_FILE_NAME	= 'M';
+	EMPTY_FILE_NAME		= '';
 VAR
-	Points			: ARRAY OF T_POINT_X;
-	LastConfig		: ARRAY OF T_POINT_X;
-	Die				: ARRAY OF T_UPDATE;
-	Born			: ARRAY OF T_UPDATE;
-	X				: Integer;
-	Y				: Integer;
-	IsEquals		: Integer;
-	Width			: Integer;
-	Height			: Integer;
-	Map				: Text;
-	CheckMap		: Text;
-	Line			: String;
-	LineNumber		: Integer;
-	CelluleCounter	: Integer;
-	NewLine			: Integer;
-	Round			: Integer;
-	CheckCelluleX	: Integer;
-	CheckCelluleY	: Integer;
-	CheckX			: Integer;
-	CheckY			: Integer;
-	CelluleArround	: Integer;
+	Points				: ARRAY [0..HEIGHT, 0..WIDTH] OF Char;
+	LastConfig			: ARRAY [0..HEIGHT, 0..WIDTH] OF Char;
+	Die					: ARRAY [0..HEIGHT, 0..WIDTH] OF Integer;
+	Born				: ARRAY [0..HEIGHT, 0..WIDTH] OF Integer;
+	Filename			: String;
+	X					: Integer;
+	PosX				: Integer;
+	Y					: Integer;
+	PosY				: Integer;
+	IsEquals			: Integer;
+	Map					: Text;
+	Line				: String;
+	CelluleCounter		: Integer;
+	NewLine				: Integer;
+	Round				: Integer;
+	CheckCelluleX		: Integer;
+	CheckCelluleY		: Integer;
+	CheckX				: Integer;
+	CheckY				: Integer;
+	CelluleArround		: Integer;
+	Choice				: String;
+	Action				: String;
+	Style				: String;
 BEGIN
-	Assign	(CheckMap, 'map.txt');
-	Reset	(CheckMap);
-
-	Width := 0;
-	LineNumber := 0;
-	WHILE NOT Eof(CheckMap) DO
-	BEGIN
-		ReadLn(CheckMap, Line);
-		IF Width = 0 THEN
-			Width := Length(Line)
-		ELSE
-			IF (Width <> Length(Line)) THEN
-			BEGIN
-				WriteLn('La ligne numéro ', (LineNumber + 1) , ' n"est pas de la bonne taille (Taille requise: ', Width, ')');
-				exit;
-			END;
-		LineNumber += 1;
-	END;
-	Close(CheckMap);
-
-	Height := LineNumber - 1;
-	SetLength(Points, Height);
-	SetLength(LastConfig, Height);
-	SetLength(Die, Height);
-	SetLength(Born, Height);
-	FOR Y := 0 TO Height DO
-	BEGIN
-		SetLength(Points[Y], Width);
-		SetLength(LastConfig[Y], Width);
-		SetLength(Die[Y], Width);
-		SetLength(Born[Y], Width);
-	END;
-	X := 0;
-	Y := 0;
 	CelluleCounter := 0;
-	Assign	(Map, 'map.txt');
-	Reset	(Map);
-	WHILE NOT Eof(Map) DO
+	FOR Y := 0 TO HEIGHT DO
+		FOR X := 0 TO WIDTH DO
+			Points[Y, X] := EMPTY;
+
+	Style := '0';
+	WHILE (Style <> AUTO) AND (Style <> MANUAL) DO
 	BEGIN
-		ReadLn(Map, Line);
-		FOR X := 0 TO Length(Line) DO
-		BEGIN
-			Points[Y, X] := Line[X];
-			IF (Points[Y, X] = CELLULE) OR (Points[Y, X] = NEW) THEN
-				CelluleCounter += 1;
-		END;
-		Y += 1;
+		Writeln(AUTO, '. Mise à jour automatique (Avec limite de tour), ', MANUAL, '. Mise à jour manuel');
+		Write('Votre choix: ');
+		ReadLn(Style);
 	END;
-	Close(Map);
-	IF CelluleCounter < 2 THEN
+	Choice := '0';
+	WHILE (Choice <> LOAD_CONFIG) AND (Choice <> MANUAL_INPUT) DO
 	BEGIN
-		WriteLn('Cette configuration est impossible (minimum 3 cellule sont requise)');
-		exit;
+		Writeln(LOAD_CONFIG, '. Charger une configuration, ', MANUAL_INPUT, '. Saisie manuelle');
+		Write('Votre choix: ');
+		ReadLn(Choice);
+	END;
+	Filename := DEFAULT_FILE_NAME;
+	IF (Choice = LOAD_CONFIG) THEN
+	BEGIN
+		Write('Configuration à charger: ');
+		ReadLn(Filename);
+		Assign	(Map, Filename);
+		Reset	(Map);
+		WHILE NOT Eof(Map) DO
+		BEGIN
+			ReadLn(Map, Line);
+			PosY := Pos(',', Line) - 1;
+			PosX := PosY + 2;
+			Y := StrToInt(Copy(Line, 1, PosY));
+			X := StrToInt(Copy(Line, PosX, Length(Line)));
+			Points[Y, X] := CELLULE;
+			CelluleCounter += 1;
+		END;
+		Close(Map);
+	END
+	ELSE IF (Choice = MANUAL_INPUT) THEN
+	BEGIN
+		REPEAT
+			Write('Point (Y,X): ');
+			ReadLn(Line);
+			IF (Line <> EOI) THEN
+			BEGIN
+				PosY := Pos(',', Line) - 1;
+				PosX := PosY + 2;
+				Y := StrToInt(Copy(Line, 1, PosY));
+				X := StrToInt(Copy(Line, PosX, Length(Line)));
+				Points[Y, X] := CELLULE;
+				CelluleCounter += 1;
+			END;
+		UNTIL (Line = EOI);
 	END;
 
 	Round := 0;
-	WHILE (Round < MAX_ROUND) AND (CelluleCounter > 0) DO
+	Action := NEXT;
+	WHILE (Action = NEXT) OR ((Style = AUTO) AND (Round < MAX_ROUND) AND (CelluleCounter > 0)) DO
 	BEGIN
 		IF (Round > 1) THEN
 		BEGIN
 			IsEquals := 1;
-			FOR Y := 0 TO Height DO
+			FOR Y := 0 TO HEIGHT DO
 			BEGIN
-				FOR X := 0 TO Width DO
+				FOR X := 0 TO WIDTH DO
 				BEGIN
 					IF (Points[Y, X] <> LastConfig[Y, X]) THEN
 						IsEquals := 0;
@@ -114,9 +127,9 @@ BEGIN
 		END;
 		Round += 1;
 		CelluleCounter := 0;
-		FOR Y := 0 TO Height DO
+		FOR Y := 0 TO HEIGHT DO
 		BEGIN
-			FOR X := 0 TO Width DO
+			FOR X := 0 TO WIDTH DO
 			BEGIN
 				Write(Points[Y,X]);
 				LastConfig[Y, X] := Points[Y, X];
@@ -130,13 +143,13 @@ BEGIN
 						BEGIN
 							CheckY := Y + (CheckCelluleY - SPACE + 1);
 							IF CheckY < 0 THEN
-								CheckY := Height
-							ELSE IF CheckY > Height THEN
+								CheckY := HEIGHT
+							ELSE IF CheckY > HEIGHT THEN
 								CheckY := 0;
 							CheckX := X + (CheckCelluleX - SPACE + 1);
 							IF CheckX < 0 THEN
-								CheckX := Width
-							ELSE IF CheckX > Width THEN
+								CheckX := WIDTH
+							ELSE IF CheckX > WIDTH THEN
 								CheckX := 0;
 							IF (Points[CheckY, CheckX] = CELLULE) OR (Points[CheckY, CheckX] = NEW) THEN
 							BEGIN
@@ -165,9 +178,9 @@ BEGIN
 			END;
 			WriteLn('');
 		END;
-		FOR Y := 0 TO Height DO
+		FOR Y := 0 TO HEIGHT DO
 		BEGIN
-			FOR X := 0 TO Width DO
+			FOR X := 0 TO WIDTH DO
 			BEGIN
 				IF (Die[Y, X] = 1) THEN
 				BEGIN
@@ -176,9 +189,9 @@ BEGIN
 				END;
 			END;
 		END;
-		FOR Y := 0 TO Height DO
+		FOR Y := 0 TO HEIGHT DO
 		BEGIN
-			FOR X := 0 TO Width DO
+			FOR X := 0 TO WIDTH DO
 			BEGIN
 				IF (Born[Y, X] = 1) THEN
 				BEGIN
@@ -187,9 +200,38 @@ BEGIN
 				END;
 			END;
 		END;
-		Delay(TIME_OUT);
+		IF (STYLE = AUTO) THEN
+			Delay(TIME_OUT)
+		ELSE BEGIN
+			Action := '0';
+			WHILE (Action <> NEXT) AND (Action <> SAVE) DO BEGIN
+				Write('Continuer (', NEXT, '), Sauver et quitter (', SAVE, '): ');
+				ReadLn(Action);
+			END;
+		END;
 		FOR NewLine := 0 TO NEW_LINE DO
 			WriteLn('');
+	END;
+	IF (Action = SAVE) THEN
+	BEGIN
+		WHILE (Filename = DEFAULT_FILE_NAME) OR (Filename = EMPTY_FILE_NAME) DO
+		BEGIN
+			Write('Nom du fichier dans lequel saisir les valeurs: ');
+			ReadLn(Filename);
+		END;
+		Assign(Map, Filename);
+		Reset(Map);
+		FOR Y := 0 TO HEIGHT DO
+			FOR X := 0 TO WIDTH DO
+				IF (Points[Y, X] = CELLULE) OR (Points[Y, X] = NEW) THEN
+				BEGIN
+					Line := IntToStr(Y);
+					Line += ',';
+					Line += IntToStr(X);
+					Line += #10;
+					WriteLn(Map, Line);
+				END;
+		Close(Map);
 	END;
 	IF (CelluleCounter > 0) THEN
 	BEGIN
